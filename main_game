@@ -1,0 +1,938 @@
+# SUBTERRANEAN SHENANIGANS
+# by James Zheng
+# Lil ol game about mining
+ 
+warn_msg1 = ""
+warn_msg2 = ""
+
+#accounts for lag because everythings based on fps, whoops
+codeskulptor_time_compensation = 1
+ 
+#tries to import VScode thing, switches to codeskulptor
+try:
+    import SimpleGUICS2Pygame.simpleguics2pygame as simplegui
+    warn_msg1 = ""
+    warn_msg2 = ""
+    codeskulptor_time_compensation = 1
+except:
+    import simplegui
+    warn_msg1 = ""
+    warn_msg2 = "Codeskulptor"
+    codeskulptor_time_compensation = 3
+import math
+import random
+ 
+# unchanged / global  variables . constants
+WIDTH = 1200
+HEIGHT = 600
+# background images
+BG1 = simplegui.load_image("https://i.ibb.co/tZq4xGK/asaaa.png")
+CAVEBG = simplegui.load_image("https://i.ibb.co/tZq4xGK/asaaa.png")
+# assets
+WALTUH = simplegui.load_image("https://i.ibb.co/2cQQ0s3/walt.png")
+CARTMAN = simplegui.load_image("https://upload.wikimedia.org/wikipedia/en/thumb/7/77/EricCartman.png/220px-EricCartman.png")
+NEUTRAL_FLAG = simplegui.load_image("https://i.ibb.co/ZdpDsv6/BM8NnDE.png")
+PLAYER2_FLAG = simplegui.load_image("https://i.ibb.co/SfHnbYw/vxnFcUF.png")
+PLAYER1_FLAG = simplegui.load_image("https://i.ibb.co/sgMxgF6/bZTxr2B.png")
+# menu
+INST_SCREEN_1 = simplegui.load_image("https://i.ibb.co/LvkBzcV/1.png")
+INST_SCREEN_2 = simplegui.load_image("https://i.ibb.co/wr2247P/2.png")
+INST_SCREEN_3 = simplegui.load_image("https://i.ibb.co/LJZ9szz/Green-won.png")
+INST_SCREEN_4 = simplegui.load_image("https://i.ibb.co/yyD6tKh/4.png")
+PRE_TITLE_SCREEN = simplegui.load_image("https://i.ibb.co/NsHchYs/Rise-and-shine-Mole-Man.png")
+CREDITS = simplegui.load_image("https://i.ibb.co/3cN82hF/Credits-and-Inspirations-in-case-y-all-can-t-find-good-games-1.png")
+TITLE_SCREEN = simplegui.load_image("https://i.ibb.co/VS0Qrq1/title.png")
+# win screens
+WAR_END_SCREEN = simplegui.load_image("https://i.ibb.co/FwdV9BX/1.png")
+PLAYER1_END_SCREEN = simplegui.load_image("https://i.ibb.co/nn7YQXJ/2.png")
+PLAYER2_END_SCREEN = simplegui.load_image("https://i.ibb.co/PtD6MqD/3.png")
+TIE_END_SCREEN = simplegui.load_image("https://i.ibb.co/L8k8y19/Yea-really-no-one-wins-You-both-tied-Maybe-we-are-all-winners-Or-maybe-losers.png")
+# sounds
+MENU_SOUND = simplegui.load_sound("https://opengameart.org/sites/default/files/churches%20in%20antioquia%20-%20intro.ogg")
+BATTLE_SOUND = simplegui.load_sound("https://opengameart.org/sites/default/files/acci%C3%B3n.ogg")
+
+IMG_LIST = (WALTUH, CARTMAN, BG1, CAVEBG, TITLE_SCREEN, PRE_TITLE_SCREEN,
+            NEUTRAL_FLAG, PLAYER1_FLAG, PLAYER2_FLAG,
+            INST_SCREEN_1, INST_SCREEN_2, INST_SCREEN_3, INST_SCREEN_4,
+            WAR_END_SCREEN, PLAYER1_END_SCREEN, PLAYER2_END_SCREEN,
+            TIE_END_SCREEN, CREDITS)
+
+# dictionary of sizes
+SIZEDIC = {WALTUH: (640, 360), CARTMAN: (220, 203), BG1: (765, 574),PRE_TITLE_SCREEN: (1200, 800), TITLE_SCREEN: (800, 600), PLAYER1_FLAG: (160, 160), NEUTRAL_FLAG: (189, 174),
+           PLAYER2_FLAG: (189, 174), CAVEBG: (800, 480), 
+           INST_SCREEN_1: (1200, 800), INST_SCREEN_2: (1200, 800),
+           INST_SCREEN_3: (1200, 800), INST_SCREEN_4: (1200, 800),
+           PLAYER1_END_SCREEN: (1920, 1080), PLAYER2_END_SCREEN: (1920, 1080),
+           WAR_END_SCREEN: (1920, 1080), CREDITS: (1920, 1080), 
+           TIE_END_SCREEN: (1920, 1080)}
+ 
+
+# changing variable
+# lists
+block_list = []
+powerup_list = []
+#enable or disable stuff
+enable_objective = True
+ 
+# title screen makes no blocks appear and when run, will make it the title screen
+current_bg = PRE_TITLE_SCREEN
+ 
+# spawns characters, pickaxes and weapons to the game
+def new_game():
+    global the_point, point, player2, player1, tool_list, pick_list, gun_list
+    global pick1, pick2, gun1, gun2, total_time, player_list, scale_width, scale_height
+    global introtime, fade_amount, codeskulptor_time_compensation
+    player1 = Character([WIDTH/2 - WIDTH/2.3, HEIGHT/2], [0,0],WALTUH, [50, 50])
+    player2 = Character([WIDTH/2 + WIDTH/2.3, HEIGHT/2], [0,0], CARTMAN, [50, 50])
+    # Makes a character that doesnt exist. It has the square collision code for the character
+    the_point = Character([WIDTH/2, HEIGHT/2 - 10], [0,0], PLAYER1_FLAG, [200, 200])
+    point = Objective([WIDTH/2, HEIGHT/2], [0, 0], NEUTRAL_FLAG, [200, 200], the_point, False)
+    # tools
+    pick1 = Pickaxe([player1.pos[0], player1.pos[1]], [0,0], 2, 8, 10, player1)
+    pick2 = Pickaxe([player2.pos[0], player2.pos[1]], [0,0], 2, 8, 10, player2)
+    gun1 = Weapon([player1.pos[0], player1.pos[1]], CARTMAN, 20, 10, [0,0], player1)
+    gun2 = Weapon([player2.pos[0], player2.pos[1]], CARTMAN, 20, 10, [0,0], player2)
+    # accounts for size changes, from the original 1200x600        
+    scale_width = WIDTH/1200
+    scale_height = HEIGHT/600
+    total_time = 7200/codeskulptor_time_compensation
+    fade_amount = 1  
+    introtime = 0
+    block_list.clear()
+    powerup_list.clear()
+    # Makes tuples for For statements inside the drawhandler to not repeat code
+    # Makes code run slightly faster
+    player_list = (player1, player2)
+    pick_list = (pick1, pick2)
+    gun_list = (gun1, gun2)
+    tool_list = (pick1, pick2, gun1, gun2)
+    
+# helper functions
+# enables and disabled the flag if pressed
+def enable_flag():
+    global enable_objective, current_bg, CAVEBG
+    if current_bg != CAVEBG:
+        if enable_objective == True:
+            enable_objective = False
+            enable_flag_button.set_text("Flag disabled")
+        elif enable_objective == False:
+            enable_objective = True
+            enable_flag_button.set_text("Flag enabled")
+# calculates distance from 1 thing to another thing          
+def distance(pos1, pos2):
+    x = pos2[0] - pos1[0]
+    y = pos2[1] - pos1[1]
+    return math.sqrt(x**2 + y**2)
+
+# one line function to see if one thing collides with another
+# This is used with multiple things that use this type of collision, to not repeat code
+gen_col = lambda obj1, obj2: distance(obj1.pos, obj2.pos) < obj1.size[0]/2 + 5 + obj2.size[0]/2
+ 
+# fills the screen with blocks, resets stats of players, revives dead players
+def fill_screen():
+    global cave_time, enable_objective, codeskulptor_time_compensation
+    powerup_interval = 20
+    powerups_available = (1,2,3,4,5,6,7,8,9,10)
+    COLOURLIST = ("#703E2A", "#A0583B", "#986B5A",
+              "#604A41", "#442316", "#59210A",
+              "#A03106")
+    #revives dead players at their spawn
+    if not player1.alive:
+        player1.pos = [WIDTH/2 - WIDTH/2.3, HEIGHT/2]
+        player1.hp = 20
+        player1.alive = True
+        
+    if not player2.alive:
+        player2.pos = [WIDTH/2 + WIDTH/2.3, HEIGHT/2]
+        player2.hp = 20
+        player2.alive = True
+        
+        if player1.alive:
+            player1.pos[1] -= 10
+        if player2.alive:
+            player2.pos[1] -= 10
+        
+    # clears blocks and powerups so they dont stay and lag the game
+    block_list.clear()
+    powerup_list.clear()
+    yrow = 10
+    xrow = 10
+    # Resets cave timer
+    cave_time = 600/codeskulptor_time_compensation
+    # Resets power up stats
+    player1.reset_stats()
+    player2.reset_stats()
+    pick1.reset_stats()
+    pick2.reset_stats()
+    gun1.reset_stats()
+    gun2.reset_stats()
+    # Generates blocks and powerups
+    for y in range(HEIGHT//20):
+        # Works on a column to a row
+        for x in range(WIDTH//20):
+            # Determinds if a power up spawns and then which one spawns
+            comchance = random.randint(0, powerup_interval)
+            rancom = powerups_available[random.randint(0, len(powerups_available)-1)]
+            # Makes a random colour choice
+            rancol = random.choice(COLOURLIST)
+            # Generates blocks, and if enabled, the bottom blocks
+            block = Blocks([xrow, yrow], rancol, [10, 10], True)
+            block_list.append(block)
+            if enable_objective:
+                if point.pos[0] - point.size[0]/2 - 10 <= xrow <= point.pos[0] + point.size[0]/2 + 10 and point.pos[1] + point.size[1]/2 + 10 == yrow:       
+                    bottom_block = Blocks([xrow, yrow], "brown", [10,10], False)
+                    block_list.append(bottom_block)
+            # Spawns if numbers actually line up
+            power = Powerup([xrow, yrow], "common", rancom)
+            if comchance == 0:
+                powerup_list.append(power)
+            # Removes it if it can. If it resaults in an error, it passe
+            try:
+                if player1.side_col(block) or player1.top_col(block) or player1.bot_col(block) or player2.side_col(block) or player2.top_col(block) or player2.bot_col(block):
+                    block_list.remove(block)
+                    powerup_list.remove(power)
+                if enable_objective:
+                    if the_point.side_col(block) or the_point.top_col(block) or the_point.bot_col(block):
+                        block_list.remove(block)
+                        powerup_list.remove(power)
+            except:
+                pass
+            xrow += 20
+        # Resets x position, moves down a row
+        yrow += 20
+        xrow = 10
+
+# classes
+# playable people
+class Character:
+    def __init__(self, position, velocity, image, size):
+        self.pos = position
+        self.vel = velocity
+        self.img = image
+        self.size = size
+        self.hp = 20
+        self.powerup_msg = ""
+        # state of character
+        self.alive = True
+        self.falling = True
+        # number stats
+        self.iframes = 15
+        self.IFRAMES = self.iframes
+        self.grav = 1
+        self.speed = 6
+        self.jump_height = -15
+        self.jump_counter = 0
+        self.max_vel = 30
+        self.deaths = 0
+        self.capture = 0
+        # size stuff
+        self.width, self.height = SIZEDIC[self.img]
+        self.left = 0 - self.width/2
+        self.right = 0 + self.width/2
+        self.top = 0 - self.height/2
+        self.bottom = 0 + self.height/2
+        # directional stuff
+        self.last_key = ""
+    def draw(self, canvas):
+       
+        canvas.draw_image(self.img,
+                          (self.width/2, self.height/2),
+                          (self.width,self.height),
+                          self.pos,
+                          self.size)
+        # Health bar
+        canvas.draw_polygon([(self.pos[0]-45, self.pos[1]-52),
+                             (self.pos[0]-45, self.pos[1]-57),
+                             (self.pos[0]+45, self.pos[1]-57),
+                             (self.pos[0]+45, self.pos[1]-52)], 2, "black", "red")
+       
+        canvas.draw_polygon([(self.pos[0]-45, self.pos[1]-52),
+                             (self.pos[0]-45, self.pos[1]-57),
+                             (self.pos[0] - 45 + self.hp*4.5, self.pos[1]-57),
+                             (self.pos[0] - 45 + self.hp*4.5, self.pos[1]-52)], 2, "black", "green")
+        # Circle below character
+        canvas.draw_circle([self.pos[0], self.pos[1] + 100], 10, 1, "green", "green")
+        # Shows power up effect
+        canvas.draw_text(self.powerup_msg, [self.pos[0] - self.size[0]/1.2, self.pos[1] - self.size[1]*1.2], 17, "white")
+    def update(self):
+        #changes position with velocity
+        self.pos[0] += self.vel[0]
+        self.pos[1] += self.vel[1]
+        #makes them appear from the other edge if walking from one edge
+        if self.pos[0] < -50:
+            self.pos[0] = WIDTH + self.size[0]/2
+        if self.pos[0] > WIDTH + self.size[0]/2:
+            self.pos[0] = -50
+        if self.pos[1] < -50:
+            self.pos[1] = HEIGHT + self.size[1]/2
+        if self.pos[1] > HEIGHT + self.size[1]/2:
+            self.pos[1] = -50
+        #applies gravity in the air and keeps applying until it reaches the cap
+        if self.vel[1] < self.max_vel and self.falling:
+            self.vel[1] += self.grav
+        #makes sure they are on the ground
+       
+        else:
+            self.falling = False
+ 
+    #changes the jump velocity to actually jump
+    def jump(self):
+        if self.jump_counter == 0:
+            self.vel[1] = self.jump_height
+            self.falling = True
+            self.jump_counter += 1
+    #resets stats
+    def reset_stats(self):
+        self.speed = 6
+        self.iframes = 15
+        self.grav = 1
+        self.jump_height = -15
+        self.jump_counter = 0
+        self.max_vel = 30
+        if self.hp > 20:
+            self.hp = 20
+        self.powerup_msg = ""
+       
+    #just for the blocks, checks for collisions
+    def side_col(self, other):
+        nextpos = self.pos[0] + self.vel[0]
+        col_vert = self.pos[1] > other.top - self.size[1]/2 and self.pos[1] <= other.bottom + self.size[1]/2
+        col_side = nextpos >= other.left - self.size[0]/2 and nextpos <= other.right + self.size[0]/2
+        return col_side and col_vert
+        #return self.pos[0] <= other.right + self.size[0]/2
+    def top_col(self, other):
+        nextpos = self.pos[1] + self.vel[1]
+        col_side = self.pos[0] >= other.left - self.size[0]/2 and self.pos[0] <= other.right + self.size[0]/2
+        col_over = nextpos >= other.top - self.size[1]/2 and not self.pos[1] >= other.pos[1]
+        return col_side and col_over
+    def bot_col(self, other):
+        nextpos = self.pos[1] + self.vel[1]
+        col_side = self.pos[0] >= other.left - self.size[0]/2 and self.pos[0] <= other.right + self.size[0]/2
+        col_under = nextpos <= other.bottom + self.size[1]/2 and not self.pos[1] < other.pos[1]
+        return col_under and col_side
+
+# breakable blocks
+class Blocks:
+    def __init__(self, position, colour, size, breakable):
+        self.pos = position
+        self.col = colour
+        # Actual size used when making class
+        self.SIZE = size
+        # Size for general collision
+        self.size = [50, 20]
+        self.unbr = breakable
+        self.left = self.pos[0] - self.SIZE[0]
+        self.right = self.pos[0] + self.SIZE[0]
+        self.top = self.pos[1] - self.SIZE[1]
+        self.bottom = self.pos[1] + self.SIZE[1]
+        #radius if blocks should check for collision
+    def draw(self, canvas):
+        canvas.draw_polygon([(self.left, self.top),
+                             (self.right, self.top),
+                             (self.right, self.bottom),
+                             (self.left, self.bottom)], 1, "black", self.col)
+        
+# Thing you break blocks with
+class Pickaxe:
+    def __init__(self, position, velocity, amount, radius, use_time, owner):
+        self.amt = amount #number of blocks broken
+        self.vel = velocity
+        self.pos = position
+        self.rad = radius
+        # size variable for general collision
+        self.size = [self.rad, self.rad]
+        self.time = use_time #time in frames
+        self.own = owner
+        # copies the rad and time to resets
+        self.TIME = self.time
+        self.RAD = self.rad
+        self.using = False
+        self.dmg = 4
+        self.speed = 10
+    def draw(self, canvas):
+        canvas.draw_circle(self.pos, self.rad, 3, "black", "white")
+    # resets stats to base stats
+    def reset_stats(self):
+        self.rad = self.RAD
+        self.time = self.TIME
+        self.dmg = 5
+        self.speed = 10
+        self.using = False
+    
+    def update(self):
+        self.pos[0] += self.vel[0]
+        self.pos[1] += self.vel[1]
+        # if it goes to edges it appears on the other edge
+        if self.pos[0] < -50:
+            self.pos[0] = WIDTH + self.rad/2 - 2
+        if self.pos[0] > WIDTH + self.rad/2:
+            self.pos[0] = -49
+        if self.pos[1] < -70:
+            self.pos[1] = HEIGHT + self.rad/2 - 2
+        if self.pos[1] > HEIGHT + self.rad/2:
+            self.pos[1] = -49
+       
+    def swing(self, character):
+        self.vel = [0,0]
+        # sets the direction and speed of the pickaxe
+        if not self.using:
+            self.pos[0] = character.pos[0]
+            self.pos[1] = character.pos[1] - 10
+            #makes the pickaxe appear
+            self.using = True
+            if character.last_key == "":
+                if character == player1:
+                    self.vel[0] = self.speed
+                if character == player2:
+                    self.vel[0] = -1*self.speed
+            if "D" == character.last_key:
+                self.vel[0] = self.speed
+            elif "A" == character.last_key:
+                self.vel[0] = -1*self.speed
+            elif "W" == character.last_key:
+                self.vel[1] = -1*self.speed
+            elif "S" == character.last_key:
+                self.vel[1] = self.speed
+            if "&" == character.last_key:
+                self.vel[1] = -1*self.speed
+            elif "%" == character.last_key:
+                self.vel[0] = -1*self.speed
+            elif "(" == character.last_key:
+                self.vel[1] = self.speed
+            elif "'" == character.last_key:
+                self.vel[0] = self.speed
+            
+# WORK ON THIS LAST ITS THE LEAST IMPORTANT              
+class Weapon:
+    def __init__(self, position, image, use_time, cooldown, velocity, owner):
+        self.pos = position
+        self.img = image
+        self.time = use_time
+        self.cd = cooldown
+        self.vel = velocity
+        self.own = owner
+        self.rad = 10
+        self.TIME = self.time
+        self.CD = self.cd
+        self.dmg = 7
+        self.using = False
+        self.grav = 1
+        self.max_vel = 17
+        self.size = [self.rad, self.rad]
+        self.speed = 20
+    def draw(self, canvas):
+        w,h = SIZEDIC[self.img]
+        canvas.draw_circle(self.pos, self.size[0], 1, "black", "gray")
+    def update(self):
+        self.pos[0] += self.vel[0]
+        self.pos[1] += self.vel[1]
+        # Caps the max velocity of gravity
+        if self.vel[1] <= self.max_vel:
+            self.vel[1] += self.grav
+    def use(self, character):
+        # sets the direction and velocity based on the last key pressed
+        if not self.using:
+            self.using = True
+            self.pos[0] = character.pos[0]
+            self.pos[1] = character.pos[1]
+            self.vel = [0,0]  
+            if character.last_key == "":
+                if character == player1:
+                    self.vel[0] = 20
+                if character == player2:
+                    self.vel[0] = -20
+            if "D" == character.last_key:
+                self.vel[0] = self.speed
+                self.vel[1] = -7
+            elif "A" == character.last_key:
+                self.vel[0] = -1*self.speed
+                self.vel[1] = -7
+            elif "W" == character.last_key:
+                self.vel[1] = -1*self.speed
+            elif "S" == character.last_key:
+                self.vel[1] = self.speed
+            if "&" == character.last_key:
+                self.vel[1] = -1*self.speed
+            elif "%" == character.last_key:
+                self.vel[0] = -1*self.speed
+                self.vel[1] = -7
+            elif "(" == character.last_key:
+                self.vel[1] = self.speed
+            elif "'" == character.last_key:
+                self.vel[0] = self.speed
+                self.vel[1] = -7
+    # resets stats to base stats
+    def reset_stats(self):
+        self.dmg = 7
+        self.using = False
+        self.grav = 1
+        self.max_vel = 17
+        self.size = [10, 10]
+        self.speed = 20
+ 
+    # Checks for collisions
+    def side_col(self, other):
+        nextpos = self.pos[0] + self.vel[0]
+        col_vert = self.pos[1] > other.top - self.size[1]/2 and self.pos[1] <= other.bottom + self.size[1]/2
+        col_side = nextpos >= other.left - self.size[0]/2 and nextpos <= other.right + self.size[0]/2
+        return col_side and col_vert
+    def vert_col(self, other):
+        nextpos = self.pos[1] + self.vel[1]
+        col_side = self.pos[0] > other.left - self.size[0]/2 and self.pos[0] <= other.right+ self.size[0]/2
+        col_vert = nextpos >= other.top - self.size[1]/2 and nextpos <= other.bottom + self.size[1]/2
+        return col_side and col_vert
+       
+# The flag (or something else for a new objective)
+class Objective:
+    def __init__(self, position, velocity, image, size, owner, moving):
+        self.pos = position
+        self.vel = velocity
+        self.img = image
+        self.size = size
+        self.own = owner
+        self.moving = moving
+    # draws a different flag for which person owns it
+    def draw(self, canvas):
+        w, h = SIZEDIC[self.img]
+        if self.own == the_point:
+            self.img = NEUTRAL_FLAG
+        elif self.own == player1:
+            self.img = PLAYER1_FLAG
+        elif self.own == player2:
+            self.img = PLAYER2_FLAG
+        else:
+            self.img = CARTMAN
+        canvas.draw_image(self.img, [w/2, h/2], [w, h],
+                      self.pos, [self.size[0], self.size[1]])
+    # unused
+    def update(self):
+        if self.moving:
+            self.pos[0] += self.vel[0]                
+            self.pos[1] += self.vel[1]                
+ 
+# changes characters stats / does some other stuff if picked up
+class Powerup:
+    def __init__(self, position, rarity, ID):
+        self.pos = position
+        self.rar = rarity
+        self.applied = False
+        # identifys which power up it is
+        self.id = ID
+        self.size = [10, 10]
+    def draw(self, canvas):
+        # unused, changes for rarity
+        if self.rar == "common":
+            canvas.draw_polygon([(self.pos[0] - 10, self.pos[1] - 10), (self.pos[0] - 10, self.pos[1] + 10),
+                                (self.pos[0] + 10, self.pos[1] + 10), (self.pos[0] + 10, self.pos[1] - 10)], 1, "black", "teal")
+        elif self.rar == "uncommon":
+            canvas.draw_polygon([(self.pos[0] - 10, self.pos[1] - 10), (self.pos[0] - 10, self.pos[1] + 10),
+                                (self.pos[0] + 10, self.pos[1] + 10), (self.pos[0] + 10, self.pos[1] - 10)], 1, "black", "green")
+        elif self.rar == "rare":
+            canvas.draw_polygon([(self.pos[0] - 10, self.pos[1] - 10), (self.pos[0] - 10, self.pos[1] + 10),
+                                (self.pos[0] + 10, self.pos[1] + 10), (self.pos[0] + 10, self.pos[1] - 10)], 1, "black", "navy")
+        elif self.rar == "legendary":
+            canvas.draw_polygon([(self.pos[0] - 10, self.pos[1] - 10), (self.pos[0] - 10, self.pos[1] + 10),
+                                (self.pos[0] + 10, self.pos[1] + 10), (self.pos[0] + 10, self.pos[1] - 10)], 1, "black", "orange")
+        else:
+            canvas.draw_polygon([(self.pos[0] - 10, self.pos[1] - 10), (self.pos[0] - 10, self.pos[1] + 10),
+                                (self.pos[0] + 10, self.pos[1] + 10), (self.pos[0] + 10, self.pos[1] - 10)], 1, "black", "white")
+ 
+       
+    # applys based on which id it has
+    def apply(self, char, pick, gun):
+        #only applies once
+        if not self.applied:
+            if self.id == 1:
+                char.hp += 10
+                char.powerup_msg = "Health boost!"
+            elif self.id == 2:
+                pick.dmg += 2
+                char.powerup_msg = "Pickaxe damage increased!"
+            elif self.id == 3:
+                char.grav -= 0.2
+                char.powerup_msg = "Gravity reduced!"
+            elif self.id == 4:
+                char.speed += 2
+                char.powerup_msg = "Slight speed increase!"
+            elif self.id == 5:
+                gun.dmg += 2
+                char.powerup_msg = "Ball damage increased!"
+            elif self.id == 6:
+                char.capture += 100
+                char.powerup_msg = "Flag capture increased!"
+            elif self.id == 7:
+                gun.speed += 10
+                char.powerup_msg = "Ball velocity increased!"
+            elif self.id == 8:
+                gun.size[0] += 3
+                char.powerup_msg = "Ball is bigger!"
+            elif self.id == 9:
+                pick.speed += 2
+                pick.time += 5
+                char.powerup_msg = "Pickaxe mines more!"
+            elif self.id == 10:
+                gun.time += 20
+                char.powerup_msg = "Ball bounces more!"
+            
+           
+           
+            self.applied = True
+
+#draws + updates at 60 fps
+def draw_handler(canvas):
+    global cave_time, total_time, current_bg, fade_amount, enable_objective, introtime
+    global warn_msg2, warn_msg1, MENU_SOUND, codeskulptor_time_compensation, scalewidthx, scalewidthy
+    width, height = SIZEDIC[current_bg]
+    canvas.draw_image(current_bg, (width/2, height/2), (width,height), (WIDTH/2, HEIGHT/2), (WIDTH, HEIGHT))
+ 
+    # actual game handling
+    if current_bg == CAVEBG:
+        # timers
+        fade_amount = 1
+        cave_time -= 1
+        total_time -= 1
+        # pauses and plays sounds
+        MENU_SOUND.rewind()
+        MENU_SOUND.pause()
+        BATTLE_SOUND.play()
+        BATTLE_SOUND.set_volume(0.8)
+        # if time runs out, makes it the war screen 
+        if total_time < 0:
+            current_bg = WAR_END_SCREEN
+            
+        # blocks are filled back in every time the timer runs out
+        if cave_time == 0:
+            fill_screen()
+            cave_time = 600/codeskulptor_time_compensation
+       
+        # blocks and collision
+        for block in block_list:
+            block.draw(canvas)
+            for player in player_list:
+                # only checks if a player is nearby
+                # prevents all blocks from running 3 if statements and instead runs 1 if statement
+                
+                if gen_col(player, block): 
+                    if player.side_col(block):
+                        player.pos[0] -= player.vel[0]
+                    if player.bot_col(block):
+                        player.vel[1] = 0
+                    # kinda struggled trying to make top collision work
+                    if player.top_col(block):
+                        player.falling = False
+                        player.vel[1] = 0
+                        player.jump_counter = 0
+                    if not player.top_col(block):
+                        player.falling = True
+                else:
+                    pass
+       
+        #delets blocks if they are colliding    
+        for block in block_list:  
+            for pick in pick_list:
+                if gen_col(block, pick) and block.unbr and pick.using:
+                    block_list.remove(block)
+            
+            # bounces if it collides with blocks
+            for gun in gun_list:
+                if gun.side_col(block):
+                    gun.vel[0] *= -1
+                if gun.vert_col(block):
+                    gun.vel[1] *= -1
+
+        # handles power ups and if someone picks it up
+        for power in powerup_list:
+            if power.applied == False:
+                power.draw(canvas)
+            if gen_col(power, player1):
+                power.apply(player1, pick1, gun1)
+            if gen_col(power, player2):
+                power.apply(player2, pick2, gun2)
+        
+        # handles players immunity frames and health
+        # made it a for loop to not repeat script
+        for player in player_list:
+            if player.alive:
+                player.draw(canvas)
+                player.update()
+                # keeps them in 1 place
+                if player.hp <= 0:
+                    player.pos = [WIDTH/2 - WIDTH/2.3, HEIGHT/2]
+                    player.deaths += 1
+                    player.alive = False
+                elif player.iframes != 0:
+                    player.iframes -= 1
+               
+        # tool halder, makes them appear if used (weapons and pickaxe)
+        for tool in tool_list:
+            for player in player_list:
+                if tool.using and tool.own == player:
+                    tool.draw(canvas)
+                    tool.update()
+                    tool.time -= 1
+                    # had to repeat code because it could not damage players if code was repeated
+                    if gen_col(tool, player1) and player1.iframes == 0 and tool.own != player1:
+                        if tool.own == player:
+                            player1.hp -= tool.dmg
+                            player1.iframes = player1.IFRAMES
+                    if gen_col(tool, player2) and player2.iframes == 0 and tool.own != player2:
+                        if tool.own == player:
+                            player2.hp -= tool.dmg
+                            player2.iframes = player2.IFRAMES
+                    if tool.time == 0:
+                        tool.using = False
+                        tool.time = tool.TIME
+               
+        # Point is enabled if variable is true
+        if enable_objective:
+            # The middle objective
+            point.draw(canvas)
+            for player in player_list:
+                # doesnt make progress in the point is contested 
+                if gen_col(point, player1) and gen_col(point, player2):
+                    canvas.draw_polygon([((WIDTH/2.5)*scale_width, (HEIGHT/3)*scale_height), 
+                                         ((WIDTH/2.5)*scale_width, (HEIGHT/3 + 20)*scale_height), 
+                                         ((WIDTH/1.67)*scale_width, (HEIGHT/3 + 20)*scale_height), 
+                                         ((WIDTH/1.67)*scale_width, (HEIGHT/3)*scale_height)], 1, "black", "white")
+                    canvas.draw_text("POINT CONTESTED, NO PROGRESS", 
+                                     (WIDTH/2.51*(scale_width), HEIGHT/3+18), 13, "black", "monospace")
+                    #canvas.draw_text("Point contested, No progress", [WIDTH/3, HEIGHT/3], 40, "white")\
+
+            # lets a player capture it if they are on it    
+                elif gen_col(point, player) and point.own != player and player.alive:
+                            player.capture += 2
+                            #canvas.draw_text("CAPTURE TIME LEFT: " + str(capture1 // 60), [WIDTH/3 + 30, HEIGHT/3], 40, "white")
+                            canvas.draw_polygon([((WIDTH/2.5)*scale_width, (HEIGHT/3)*scale_height), 
+                                                 ((WIDTH/2.5)*scale_width, (HEIGHT/3 + 20)*scale_height), 
+                                                 ((WIDTH/1.67)*scale_width, (HEIGHT/3 + 20)*scale_height), 
+                                                 ((WIDTH/1.67)*scale_width, (HEIGHT/3)*scale_height)], 1, "black", "white")
+                            canvas.draw_text("CAPTURE PROGRESS", 
+                                             (WIDTH/2.4*(scale_width), HEIGHT/3+18), 20, "black", "monospace")
+                            canvas.draw_polygon([((WIDTH/2.5)*scale_width + (player.capture/1.25)*scale_width, (HEIGHT/3)*scale_height), 
+                                                 ((WIDTH/2.5)*scale_width + (player.capture/1.25)*scale_width, (HEIGHT/3 + 20)*scale_height),
+                                                 ((WIDTH/2.5)*scale_width, (HEIGHT/3 + 20)*scale_height), 
+                                                 ((WIDTH/2.5)*scale_width, (HEIGHT/3)*scale_height)], 1, "black", "green")
+                            if player.capture >= 300:
+                                point.own = player
+                                player1.capture = 0
+                                player2.capture = 0
+       
+        # ticks time down, says general stats, is displayed at the side
+        timer_label.set_text('TOTAL TIME : ' + str(total_time // (60/codeskulptor_time_compensation)))
+        game_stat_label.set_text("CURRENT GAME INFO: ")
+        cave_timer_label.set_text("CAVE TIME: " + str(cave_time // (60/codeskulptor_time_compensation)))
+        player1_ko_label.set_text("PLAYER 1 KILLS: " + str(player2.deaths))
+        player2_ko_label.set_text("PLAYER 2 KILLS: " + str(player1.deaths))
+        enable_flag_button.set_text("Cannot change now")
+    
+    # menu screens
+   
+    # The fade to entering the game
+    if current_bg == PRE_TITLE_SCREEN:
+        introtime += 1
+        # timed events
+        if introtime > 0 and introtime < 199:
+            fade_amount -= 0.005
+        elif introtime > 200 and introtime < 419:
+            fade_amount += 0
+        elif introtime > 420 and introtime < 519:
+            fade_amount += 0.01
+        elif introtime == 520:
+            fade_amount = 1
+            current_bg = TITLE_SCREEN
+            
+       
+        canvas.draw_text("Click anywhere to skip"
+                         , [WIDTH/2 + 100 , HEIGHT/2 + 250], 40, "white", "sans-serif")
+    # the buttons in the title screen  
+    elif current_bg == TITLE_SCREEN:
+        fade_amount -= 0.005
+        introtime = 0
+        # changes between size changes
+        canvas.draw_polygon([(50, 160*scale_height), 
+                             (50, 260*scale_height), 
+                             (290*scale_width, 260*scale_height), 
+                             (290*scale_width, 160*scale_height)], 5, "black", "brown")
+        canvas.draw_polygon([(50, 280*scale_height), 
+                             (50, 380*scale_height), 
+                             (370*scale_width, 380*scale_height), 
+                             (370*scale_width, 280*scale_height)], 5, "black", "brown")
+        canvas.draw_polygon([(50, 400*scale_height), 
+                             (50, 500*scale_height), 
+                             (590*scale_width, 500*scale_height), 
+                             (590*scale_width, 400*scale_height)], 5, "black", "brown")
+        canvas.draw_text("START", [55, 230*scale_height], 70*(scale_width), "black")
+        canvas.draw_text("CREDITS", [55, 350*scale_height], 70*(scale_width), "black")
+        canvas.draw_text("INSTRUCTIONS", [55, 470*scale_height], 70*(scale_width), "black")
+        canvas.draw_text(warn_msg1, [20, 540*scale_height], 25*scale_width, "White")
+        canvas.draw_text(warn_msg2, [20, 570*scale_height], 25*scale_width, "White")
+    # ending screens
+    elif current_bg == WAR_END_SCREEN:
+        introtime += 1
+        canvas.draw_text("Click anywhere to skip"
+                         , [WIDTH/2 + 100 , HEIGHT/2 + 250], 40, "white", "sans-serif")
+        # timed fades
+        if introtime > 0 and introtime < 120:
+            fade_amount -= 0.01
+        elif introtime > 121 and introtime < 200:
+            fade_amount += 0
+        elif introtime > 201 and introtime < 260:
+            fade_amount += 0.016
+        elif introtime >= 261:
+            fade_amount = 1
+            introtime = 0
+            # gives endings based on objective met
+            if enable_objective:
+                if point.own == player1:
+                    current_bg = PLAYER1_END_SCREEN
+                elif point.own == player2:
+                    current_bg = PLAYER2_END_SCREEN
+                else:
+                    current_bg = TIE_END_SCREEN
+            elif not enable_objective:
+                if player2.deaths > player1.deaths:
+                    current_bg = PLAYER1_END_SCREEN
+                elif player1.deaths > player2.deaths:
+                    current_bg = PLAYER2_END_SCREEN
+                else:
+                    current_bg = TIE_END_SCREEN
+    # LOOK AT THOSE FADES
+    elif current_bg in (PLAYER1_END_SCREEN, PLAYER2_END_SCREEN, TIE_END_SCREEN):
+        introtime += 1
+        canvas.draw_text("Click anywhere to skip"
+                         , [WIDTH/2 + 100 , HEIGHT/2 + 250], 40, "white", "sans-serif")
+        if introtime > 0 and introtime < 199:
+            fade_amount -= 0.05
+        if introtime > 300 and introtime < 399:
+            fade_amount += 0.05
+        elif introtime > 400:
+            fade_amount = 1
+            current_bg = TITLE_SCREEN
+ 
+    # makes sure these sounds and labels dont play outside the game
+    if current_bg != CAVEBG:
+            MENU_SOUND.play()
+            BATTLE_SOUND.rewind()
+            BATTLE_SOUND.pause()
+            MENU_SOUND.set_volume(0.6)
+            timer_label.set_text('')
+            game_stat_label.set_text("")
+            cave_timer_label.set_text("")
+            player1_ko_label.set_text("")
+            player2_ko_label.set_text("")
+             # the fade of the screen
+            canvas.draw_polygon([(WIDTH, HEIGHT), (WIDTH, 0), (0, 0), (0, HEIGHT)], 1, "black", f"rgba(0, 0, 0, {fade_amount})")
+ 
+# key press handler
+def key_press(key):
+    global last_key
+    if key == simplegui.KEY_MAP["a"]:
+        player1.vel[0] = -1*player1.speed
+        player1.last_key = chr(key)
+    elif key == simplegui.KEY_MAP["d"]:
+        player1.vel[0] = player1.speed
+        player1.last_key = chr(key)
+    if key == simplegui.KEY_MAP["w"]:
+        player1.jump()
+        player1.last_key = chr(key)
+    elif key == simplegui.KEY_MAP["s"]:
+        player1.last_key = chr(key)
+    if key == simplegui.KEY_MAP["r"] and player1.alive and not pick1.using:
+        pick1.swing(player1)
+    elif key == simplegui.KEY_MAP["t"] and player1.alive and not gun1.using:
+        gun1.use(player1)
+ 
+    if key == simplegui.KEY_MAP["left"]:
+        player2.vel[0] = -1*player2.speed
+        player2.last_key = chr(key)
+    elif key == simplegui.KEY_MAP["right"]:
+        player2.vel[0] = player2.speed
+        player2.last_key = chr(key)
+    if key == simplegui.KEY_MAP["up"]:
+        player2.jump()
+        player2.last_key = chr(key)
+    elif key == simplegui.KEY_MAP["down"]:
+        player2.last_key = chr(key)
+    if key == simplegui.KEY_MAP["o"] and player2.alive and not pick2.using:
+        pick2.swing(player2)
+    elif key == simplegui.KEY_MAP["p"] and player2.alive and not gun2.using:
+        gun2.use(player2)
+
+# key release handler
+def key_release(key):
+    if key == simplegui.KEY_MAP["a"]:
+        player1.vel[0] = 0
+    elif key == simplegui.KEY_MAP["d"]:
+        player1.vel[0] = 0
+
+    if key == simplegui.KEY_MAP["left"]:
+        player2.vel[0] = 0
+    elif key == simplegui.KEY_MAP["right"]:
+        player2.vel[0] = 0
+
+# mouse handler for menu screens 
+def mouse_click(pos):
+    global current_bg, BG1, TITLE_SCREEN, CAVEBG, fade_amount, PRE_TITLE_SCREEN
+    
+    if current_bg == PRE_TITLE_SCREEN:
+        fade_amount = 0
+        current_bg = TITLE_SCREEN
+    elif current_bg == TITLE_SCREEN:
+        if pos[0] >= 35 and pos[0] <= 1150 and pos[1] >= 40 and pos[1] <= 90:
+            
+            current_bg = CAVEBG
+            new_game()
+            fill_screen()
+            fade_amount = 0
+        if 50 <= pos[0] <= 290*scale_width and 160*scale_height < pos[1] < 260*scale_height:
+            current_bg = CAVEBG
+            new_game()
+            fill_screen()
+            fade_amount = 0
+        elif 50 <= pos[0] <= 370*scale_width and 280*scale_height < pos[1] < 380*scale_height:
+            current_bg = CREDITS
+            fade_amount = 0
+        elif 50 <= pos[0] <= 590*scale_width and 400*scale_height < pos[1] < 500*scale_height:
+            current_bg = INST_SCREEN_1
+            fade_amount = 0
+    # if clicked anywhere, makes screen switch to next screen
+    elif current_bg == INST_SCREEN_1:
+        current_bg = INST_SCREEN_2
+    elif current_bg == INST_SCREEN_2:
+        current_bg = INST_SCREEN_3
+    elif current_bg == INST_SCREEN_3:
+        current_bg = INST_SCREEN_4
+    elif current_bg == INST_SCREEN_4:
+        current_bg = TITLE_SCREEN
+    elif current_bg == CREDITS:
+        current_bg = TITLE_SCREEN
+    elif current_bg in (WAR_END_SCREEN, PLAYER1_END_SCREEN, PLAYER2_END_SCREEN, TIE_END_SCREEN):
+        current_bg = TITLE_SCREEN
+        
+
+# reloads characters
+new_game()
+# frame stuff
+frame = simplegui.create_frame("SUBTERRANEAN SHENANIGANS", WIDTH, HEIGHT)
+frame.set_canvas_background("white")
+# handlers
+frame.set_draw_handler(draw_handler)
+frame.set_keydown_handler(key_press)
+frame.set_keyup_handler(key_release)
+frame.set_mouseclick_handler(mouse_click)
+# labels at the side of the screen
+frame.add_label("SUBTERRANEAN SHENANIGANS")
+frame.add_label("BY JZ (not the rapper)")
+frame.add_label("")
+enable_flag_button = frame.add_button("Flag enabled", enable_flag, 100)
+frame.add_label("")
+frame.add_label("")
+game_stat_label = frame.add_label("")
+timer_label = frame.add_label("")
+cave_timer_label = frame.add_label("")
+player1_ko_label = frame.add_label("")
+player2_ko_label = frame.add_label("")
+frame.start()
+ 
+ 
+ 
